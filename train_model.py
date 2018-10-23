@@ -42,7 +42,7 @@ def get_args():
     parser.add_argument('--windows', nargs='+', type=int, default=[3, 4, 5])
     parser.add_argument('--patience', type=int, default=5)
     parser.add_argument('--model_tmp_path', default='model.tmp.pkl')
-    parser.add_argument('--pos', action="store_true", type=bool, default=False)
+    parser.add_argument('--pos', action="store_true", default=False)
     parser.add_argument('--results_path')
     parser.add_argument('--save_path')
     parser.add_argument('--graph_image_path')

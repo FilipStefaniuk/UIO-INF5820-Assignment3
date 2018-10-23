@@ -6,8 +6,6 @@
 #SBATCH --partition=accel
 #SBATCH --gres=gpu:1
 #SBATCH --mem-per-cpu=10000
-#SBATCH --output=./results/baseline/seed/output.log
-#SBATCH --err=./results/baseline/seed/err.log
 
 module purge
 module use -a /projects/nlpl/software/modulefiles/
