@@ -21,6 +21,7 @@ from keras.layers import Concatenate, Embedding, Reshape, Input
 from keras.callbacks import TensorBoard, EarlyStopping, ReduceLROnPlateau, ModelCheckpoint
 
 from sklearn.preprocessing import LabelEncoder
+from sklearn.metrics import classification_report
 from sklearn.metrics import accuracy_score, precision_recall_fscore_support
 
 
@@ -132,6 +133,8 @@ if __name__ == '__main__':
     val, _ = load_data('./data/stanford_sentiment_binary_dev.tsv.gz', tokenizer=tokenizer,
                        label_encoder=label_encoder, maxlen=args.max_len, max_words=args.max_words, pos=args.pos)
 
+    logger.info("using {} words".format(tokenizer.num_words or len(tokenizer.word_index)))
+
     # Create embedding layer
     logger.info("building embedding layer")
     emb = get_embedding(args.mode, args.word_vectors, tokenizer, args.max_len, emb_dim=args.emb_dim)
@@ -165,11 +168,13 @@ if __name__ == '__main__':
         model.load_weights(args.model_tmp_path)
         os.remove(args.model_tmp_path)
 
+    y_val_preds = model.predict(val[0])
+    print(classification_report(np.argmax(val[1], axis=1), 
+          np.argmax(y_val_preds, axis=1), target_names=label_encoder.classes_))
+
     # Save metrics
     if args.results_path:
         logger.info("computing and saving metrics")
-        y_val_preds = model.predict(val[0])
-
         metrics = get_metrics(np.argmax(val[1], axis=1), np.argmax(y_val_preds, axis=1))
         metrics['labels'] = label_encoder.classes_.tolist()
 
