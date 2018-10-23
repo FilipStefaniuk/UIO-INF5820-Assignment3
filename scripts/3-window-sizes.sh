@@ -1,13 +1,12 @@
 #!/bin/bash
 
-#SBATCH --job-name=inf5820_assignment3
+#SBATCH --job-name=inf5820
 #SBATCH --account=nn9447k
 #SBATCH --time=00:30:00
 #SBATCH --partition=accel
 #SBATCH --gres=gpu:1
 #SBATCH --mem-per-cpu=10000
-#SBATCH --output=./results/baseline/windows/output.log
-#SBATCH --err=./results/baseline/windows/err.log
+#SBATCH --output=./logs/windows.log
 
 module purge
 module use -a /projects/nlpl/software/modulefiles/
@@ -35,5 +34,5 @@ mkdir -p $OUTPUT_DIR
 
 for ((i=0; i < ${#WINDOW_SIZES[@]}; i++)); do
     OUTPUT_FILE="${OUTPUT_DIR}$(echo ${WINDOW_SIZES[$i]} | sed 's/ /-/g').json"
-    python train_model.py --mode=static --results_path="$OUTPUT_FILE" --seed="$SEED" --windows ${WINDOW_SIZES[$i]}
+    python train_model.py --mode=static --results_path="$OUTPUT_FILE" --seed="$SEED" --model_tmp_path="windows.model.tmp" --windows ${WINDOW_SIZES[$i]}
 done

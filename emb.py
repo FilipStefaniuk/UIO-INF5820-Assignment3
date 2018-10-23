@@ -8,7 +8,7 @@ import zipfile
 def load_emb_model(embeddings_file):
     """Loads word embeddings model from file."""
     if embeddings_file.endswith('.fasttext.bin'):  # Fasttext binary file
-        return gensim.models.wrappers.FastText().load_fasttext_format(embeddings_file)
+        return gensim.models.FastText.load_fasttext_format(embeddings_file)
 
     elif embeddings_file.endswith('.bin.gz') or embeddings_file.endswith('.bin'):  # Binary word2vec format
         return gensim.models.KeyedVectors.load_word2vec_format(

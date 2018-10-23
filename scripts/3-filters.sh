@@ -1,13 +1,12 @@
 #!/bin/bash
 
-#SBATCH --job-name=inf5820_assignment3
+#SBATCH --job-name=inf5820
 #SBATCH --account=nn9447k
 #SBATCH --time=00:30:00
 #SBATCH --partition=accel
 #SBATCH --gres=gpu:1
 #SBATCH --mem-per-cpu=10000
-#SBATCH --output=./results/baseline/filters/output.log
-#SBATCH --err=./results/baseline/filters/err.log
+#SBATCH --output=./logs/filters.log
 
 module purge
 module use -a /projects/nlpl/software/modulefiles/
@@ -23,5 +22,5 @@ mkdir -p $OUTPUT_DIR
 
 for ((i=0; i < ${#FILTERS[@]}; i++)); do
     OUTPUT_FILE="${OUTPUT_DIR}${FILTERS[$i]}.json"
-    python train_model.py --mode=static --results_path="$OUTPUT_FILE" --word_vectors="$WORD_VECTORS" --seed="$SEED" --filter_size="${FILTERS[$i]}"
+    python train_model.py --mode=static --results_path="$OUTPUT_FILE" --word_vectors="$WORD_VECTORS" --seed="$SEED" --filter_size="${FILTERS[$i]}" --model_tmp_path="filters.model.tmp"
 done
