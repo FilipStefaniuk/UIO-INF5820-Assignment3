@@ -14,8 +14,7 @@ def load_data(path, tokenizer=None, label_encoder=None, pos=False, maxlen=None, 
     data = pd.read_csv(path, sep='\t', compression='gzip', usecols=[col_x, col_y])
 
     if tokenizer is None:
-        tokenizer = Tokenizer(num_words=max_words)
-        tokenizer.fit_on_texts(data[col_x])
+        tokenizer = Tokenizer(num_words=max_words, filters='', lower=False) if pos else Tokenizer(num_words=max_words)
 
     if label_encoder is None:
         label_encoder = LabelEncoder()

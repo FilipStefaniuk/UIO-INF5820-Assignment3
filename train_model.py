@@ -42,6 +42,7 @@ def get_args():
     parser.add_argument('--windows', nargs='+', type=int, default=[3, 4, 5])
     parser.add_argument('--patience', type=int, default=5)
     parser.add_argument('--model_tmp_path', default='model.tmp.pkl')
+    parser.add_argument('--pos', action="store_true", type=bool, default=False)
     parser.add_argument('--results_path')
     parser.add_argument('--save_path')
     parser.add_argument('--graph_image_path')
@@ -119,17 +120,17 @@ if __name__ == '__main__':
     # set random state
     if args.seed:
         logger.info("setting random seed to {}".format(args.seed))
-        random.seed(SEED)
-        np.random.seed(SEED)
-        tf.set_random_seed(SEED)
+        random.seed(args.seed)
+        np.random.seed(args.seed)
+        tf.set_random_seed(args.seed)
 
     # Load data from files (training and validation), tokenize and preprocess texts
     logger.info("loading and preprocessing dataset")
     (x_train, y_train), (tokenizer, label_encoder) = load_data('./data/stanford_sentiment_binary_train.tsv.gz',
-                                                               maxlen=args.max_len, max_words=args.max_words)
+                                                        maxlen=args.max_len, max_words=args.max_words, pos=args.pos)
 
     val, _ = load_data('./data/stanford_sentiment_binary_dev.tsv.gz', tokenizer=tokenizer,
-                       label_encoder=label_encoder, maxlen=args.max_len, max_words=args.max_words)
+                       label_encoder=label_encoder, maxlen=args.max_len, max_words=args.max_words, pos=args.pos)
 
     # Create embedding layer
     logger.info("building embedding layer")
