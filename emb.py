@@ -1,12 +1,16 @@
 from keras.layers import Embedding
 import numpy as np
+import logging
 import gensim
 import zipfile
 
 
 def load_emb_model(embeddings_file):
     """Loads word embeddings model from file."""
-    if embeddings_file.endswith('.bin.gz') or embeddings_file.endswith('.bin'):  # Binary word2vec format
+    if embeddings_file.endswith('.fasttext.bin'):  # Fasttext binary file
+        return gensim.models.wrappers.FastText().load_fasttext_format(embeddings_file)
+
+    elif embeddings_file.endswith('.bin.gz') or embeddings_file.endswith('.bin'):  # Binary word2vec format
         return gensim.models.KeyedVectors.load_word2vec_format(
             embeddings_file, binary=True, unicode_errors='replace')
 
@@ -26,16 +30,23 @@ def load_emb_model(embeddings_file):
 
 def get_emb_layer(emb_model, tokenizer, trainable=False, emb_dim=300):
     """Creates Keras embedding layer."""
+    logger = logging.getLogger(__name__)
 
     num_words = tokenizer.num_words or len(tokenizer.word_index)
     emb_dim = emb_model.wv.vector_size if emb_model else emb_dim
 
     emb_matrix = np.random.normal(size=(num_words + 1, emb_dim))
+    emb_matrix[0] = np.zeros(shape=(emb_dim))
 
+    oov = 0
     if emb_model:
         for i in range(1, num_words + 1):
             word = tokenizer.index_word[i]
-            if word in emb_model.wv.vocab:
+            try:
                 emb_matrix[i] = emb_model.wv.get_vector(word)
+            except KeyError:
+                oov += 1
+
+        logger.warn("there are {} oov tokens".format(oov))
 
     return Embedding(num_words + 1, emb_dim, weights=[emb_matrix], trainable=trainable)

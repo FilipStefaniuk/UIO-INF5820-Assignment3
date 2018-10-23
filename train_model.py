@@ -1,6 +1,8 @@
 import os
+import sys
 import json
 import random
+import logging
 import argparse
 import numpy as np
 import pandas as pd
@@ -11,6 +13,7 @@ from emb import load_emb_model, get_emb_layer
 from model import build_model
 
 from keras.utils import to_categorical
+from keras.utils.vis_utils import plot_model
 from keras.models import Sequential, Model
 from keras.preprocessing.text import Tokenizer
 from keras.preprocessing.sequence import pad_sequences
@@ -26,7 +29,7 @@ def get_args():
     parser = argparse.ArgumentParser()
 
     parser.add_argument('--mode', choices=['static', 'non-static', 'multichannel'], default='static')
-    parser.add_argument('--epochs', type=int, default=20)
+    parser.add_argument('--epochs', type=int, default=30)
     parser.add_argument('--batch_size', type=int, default=256)
     parser.add_argument('--lr', type=float, default=1.0)
     parser.add_argument('--emb_dim', type=int, default=300)
@@ -38,8 +41,10 @@ def get_args():
     parser.add_argument('--dropout_rate', type=float, default=0.5)
     parser.add_argument('--windows', nargs='+', type=int, default=[3, 4, 5])
     parser.add_argument('--patience', type=int, default=5)
+    parser.add_argument('--model_tmp_path', default='model.tmp.pkl')
     parser.add_argument('--results_path')
     parser.add_argument('--save_path')
+    parser.add_argument('--graph_image_path')
 
     return parser.parse_args()
 
@@ -54,12 +59,14 @@ def get_embedding(mode, path, tokenizer, input_len, emb_dim=300):
         emb = Sequential()
         emb.add(get_emb_layer(emb_model, tokenizer, trainable=False))
         emb.add(Reshape((input_len, emb_dim, 1)))
+        emb.name = 'embedding_1'
         return emb
 
     elif mode in ('non-static'):
         emb = Sequential()
         emb.add(get_emb_layer(emb_model, tokenizer, trainable=True))
         emb.add(Reshape((input_len, emb_dim, 1)))
+        emb.name = 'embedding_1'
         return emb
 
     elif mode in ('multichannel'):
@@ -74,7 +81,9 @@ def get_embedding(mode, path, tokenizer, input_len, emb_dim=300):
 
         outputs = Concatenate()([emb1, emb2])
 
-        return Model(inputs=inputs, outputs=outputs)
+        emb = Model(inputs=inputs, outputs=outputs)
+        emb.name = 'embedding_1'
+        return emb
 
     raise ValueError('invalid mode')
 
@@ -98,17 +107,24 @@ def get_metrics(y_true, y_pred):
 
 if __name__ == '__main__':
 
+    # Create logger
+    logging.basicConfig(format='%(asctime)s : %(levelname)s : %(message)s', level=logging.INFO)
+    logger = logging.getLogger(__name__)
+
     # Parse command line arguments
     args = get_args()
+    logger.info("training model in {} mode".format(args.mode))
 
     # if seed is provided in arguments,
     # set random state
     if args.seed:
+        logger.info("setting random seed to {}".format(args.seed))
         random.seed(SEED)
         np.random.seed(SEED)
         tf.set_random_seed(SEED)
 
     # Load data from files (training and validation), tokenize and preprocess texts
+    logger.info("loading and preprocessing dataset")
     (x_train, y_train), (tokenizer, label_encoder) = load_data('./data/stanford_sentiment_binary_train.tsv.gz',
                                                                maxlen=args.max_len, max_words=args.max_words)
 
@@ -116,9 +132,11 @@ if __name__ == '__main__':
                        label_encoder=label_encoder, maxlen=args.max_len, max_words=args.max_words)
 
     # Create embedding layer
+    logger.info("building embedding layer")
     emb = get_embedding(args.mode, args.word_vectors, tokenizer, args.max_len, emb_dim=args.emb_dim)
 
     # Build model
+    logger.info("building model")
     model = build_model(args.max_len, emb, windows=args.windows, filter_size=args.filter_size,
                         dropout_rate=args.dropout_rate, lr=args.lr)
     model.summary()
@@ -126,27 +144,43 @@ if __name__ == '__main__':
     callbacks = [
         EarlyStopping(patience=args.patience),
         ReduceLROnPlateau(patience=2),
-        ModelCheckpoint('model.tmp.pkl', save_best_only=True)
+        ModelCheckpoint(args.model_tmp_path, save_best_only=True)
     ]
 
     # Train model
-    model.fit(x_train, y_train, epochs=args.epochs, validation_data=val,
-              batch_size=args.batch_size, callbacks=callbacks)
+    try:
+        logger.info("training the model")
+        model.fit(x_train, y_train, epochs=args.epochs, validation_data=val,
+                  batch_size=args.batch_size, callbacks=callbacks)
+    except KeyboardInterrupt:
+        logger.error("keyboard interrupt")
+        if os.path.isfile(args.model_tmp_path):
+            os.remove(args.model_tmp_path)
+        sys.exit()
 
-    model.load_weights('model.tmp.pkl')
-    os.remove('model.tmp.pkl')
-
-    # Test best model on validation set
-    y_val_preds = model.predict(val[0])
-
-    metrics = get_metrics(np.argmax(val[1], axis=1), np.argmax(y_val_preds, axis=1))
-    metrics['labels'] = label_encoder.classes_.tolist()
+    # Load best model and remove tmp file
+    if os.path.isfile(args.model_tmp_path):
+        logger.info("loading best model weights")
+        model.load_weights(args.model_tmp_path)
+        os.remove(args.model_tmp_path)
 
     # Save metrics
     if args.results_path:
+        logger.info("computing and saving metrics")
+        y_val_preds = model.predict(val[0])
+
+        metrics = get_metrics(np.argmax(val[1], axis=1), np.argmax(y_val_preds, axis=1))
+        metrics['labels'] = label_encoder.classes_.tolist()
+
         with open(args.results_path, "w") as f:
             json.dump(metrics, f)
 
+    # Plot model architecture to a file.
+    if args.graph_image_path:
+        logger.info("saving model architecure plot")
+        plot_model(model, args.graph_image_path, show_shapes=True)
+
     # Save model
     if args.save_path:
+        logger.info("saving model")
         model.save_weights(args.save_path)
