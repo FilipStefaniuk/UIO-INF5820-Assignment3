@@ -1,6 +1,6 @@
 #!/bin/bash
 
-#SBATCH --job-name=inf5820
+#SBATCH --job-name=multichannel-inf5820
 #SBATCH --account=nn9447k
 #SBATCH --time=00:30:00
 #SBATCH --partition=accel

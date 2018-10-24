@@ -1,6 +1,6 @@
 #!/bin/bash
 
-#SBATCH --job-name=inf5820
+#SBATCH --job-name=infer-oov-inf5820
 #SBATCH --account=nn9447k
 #SBATCH --time=05:00:00
 #SBATCH --partition=accel
