@@ -5,7 +5,8 @@ TODO:
 
 - train emb on non lemmatized
 - pos tags and just lemmas
-- results of window sizes 
+- results of window sizes
+- activations 
 
 - Report
     + 1
@@ -15,4 +16,3 @@ TODO:
 
 - Best Model
 - Eval on test script
-- README

@@ -28,5 +28,11 @@ mkdir -p $OUTPUT_DIR
 
 for ((i=0; i < ${#POS_WORD_VECTORS[@]}; i++)); do
     OUTPUT_FILE="${OUTPUT_DIR}$(basename ${POS_WORD_VECTORS[i]}).json"
-    python train_model.py --mode=static --results_path="$OUTPUT_FILE" --word_vectors="${POS_WORD_VECTORS[$i]}" --seed="$SEED" --pos --model_tmp_path="pos.model.tmp"
+    python train_model.py --mode=static --results_path="$OUTPUT_FILE" --word_vectors="${POS_WORD_VECTORS[$i]}" --seed="$SEED" --words="pos_tagged" --model_tmp_path="pos.model.tmp"
+done
+
+
+for ((i=0; i < ${#LEMMATIZED_WORD_VECTORS[@]}; i++)); do
+    OUTPUT_FILE="${OUTPUT_DIR}$(basename ${LEMMATIZED_WORD_VECTORS[i]}).json"
+    python train_model.py --mode=static --results_path="$OUTPUT_FILE" --word_vectors="${LEMMATIZED_WORD_VECTORS[$i]}" --seed="$SEED" --words="lemmatized" --model_tmp_path="pos.model.tmp"
 done
