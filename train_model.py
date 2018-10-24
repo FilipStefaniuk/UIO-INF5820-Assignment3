@@ -27,26 +27,43 @@ from sklearn.metrics import accuracy_score, precision_recall_fscore_support
 
 def get_args():
     """Parse command line arguments."""
-    parser = argparse.ArgumentParser()
+    parser = argparse.ArgumentParser(description="""
+        Train CNN classifier for sentiment classification task.
+        Atchitecture is based on "A Sensitivity Analysis of (and Practitioners’ Guide to) Convolutional
+        Neural Networks for Sentence Classification" paper.
+    """)
 
-    parser.add_argument('--mode', choices=['static', 'non-static', 'multichannel'], default='static')
-    parser.add_argument('--epochs', type=int, default=30)
-    parser.add_argument('--batch_size', type=int, default=256)
-    parser.add_argument('--lr', type=float, default=1.0)
-    parser.add_argument('--emb_dim', type=int, default=300)
-    parser.add_argument('--seed', type=int)
-    parser.add_argument('--max_words', type=int)
-    parser.add_argument('--max_len', type=int, default=50)
-    parser.add_argument('--word_vectors')
-    parser.add_argument('--filter_size', type=int, default=100)
-    parser.add_argument('--dropout_rate', type=float, default=0.5)
-    parser.add_argument('--windows', nargs='+', type=int, default=[3, 4, 5])
-    parser.add_argument('--patience', type=int, default=5)
-    parser.add_argument('--model_tmp_path', default='model.tmp.pkl')
-    parser.add_argument('--pos', action="store_true", default=False)
-    parser.add_argument('--results_path')
-    parser.add_argument('--save_path')
-    parser.add_argument('--graph_image_path')
+    parser.add_argument('--epochs', type=int, default=30, help="number of epochs to train.")
+    parser.add_argument('--batch_size', type=int, default=256, help="training batch size.")
+    parser.add_argument('--lr', type=float, default=1.0, help="learning rate used in adadelta optimizer.")
+    parser.add_argument('--seed', type=int, help="random seed")
+    parser.add_argument('--max_words', type=int, help="max number of words in dictionary")
+    parser.add_argument('--max_len', type=int, default=50, help="sentences are padded/clipped to that length")
+    parser.add_argument('--filter_size', type=int, default=100, help="number of filters in convolutions.")
+    parser.add_argument('--dropout_rate', type=float, default=0.5, help="dropout rate.")
+    parser.add_argument('--windows', nargs='+', type=int, default=[3, 4, 5], help="window sizes.")
+    parser.add_argument('--patience', type=int, default=5, help="patience for early stopping.")
+    parser.add_argument('--batch_norm', action="store_true", default=False, help="wether to use batch norm.")
+
+    parser.add_argument('--emb_dim', type=int, default=300,
+                        help="dimentionality of word embeddings (overrided when loaded from file)")
+
+    parser.add_argument('--mode', choices=['static', 'non-static', 'multichannel'], default='static',
+                        help="mode of embedding layer.")
+
+    parser.add_argument('--model_tmp_path', default='model.tmp.pkl',
+                        help="tmp file where to save best model during trainig.")
+
+    parser.add_argument('--words', choices=['raw', 'lemmatized', 'pos_tagged'], default='raw',
+                        help="type of  words from dataset.")
+
+    parser.add_argument('--activation', choices=['relu', 'tanh', 'sigmoid', 'leakyrelu', 'elu'], default='relu',
+                        help="activation function.")
+
+    parser.add_argument('--word_vectors', help="pretrained word embeddings to use.")
+    parser.add_argument('--results_path', help="path where to save the json file with result metrics.")
+    parser.add_argument('--save_path', help="path where to save model.")
+    parser.add_argument('--graph_image_path', help="path where to save image with model architecture.")
 
     return parser.parse_args()
 
@@ -127,13 +144,13 @@ if __name__ == '__main__':
 
     # Load data from files (training and validation), tokenize and preprocess texts
     logger.info("loading and preprocessing dataset")
-    (x_train, y_train), (tokenizer, label_encoder) = load_data('./data/stanford_sentiment_binary_train.tsv.gz',
-                                                        maxlen=args.max_len, max_words=args.max_words, pos=args.pos)
+    train, (tokenizer, label_encoder) = load_data('./data/stanford_sentiment_binary_train.tsv.gz',
+                                                  maxlen=args.max_len, max_words=args.max_words, words=args.words)
 
     val, _ = load_data('./data/stanford_sentiment_binary_dev.tsv.gz', tokenizer=tokenizer,
-                       label_encoder=label_encoder, maxlen=args.max_len, max_words=args.max_words, pos=args.pos)
+                       label_encoder=label_encoder, maxlen=args.max_len, max_words=args.max_words, words=args.words)
 
-    logger.info("using {} words".format(tokenizer.num_words or len(tokenizer.word_index)))
+    logger.info("using {} {} words".format(tokenizer.num_words or len(tokenizer.word_index), args.words))
 
     # Create embedding layer
     logger.info("building embedding layer")
@@ -141,8 +158,8 @@ if __name__ == '__main__':
 
     # Build model
     logger.info("building model")
-    model = build_model(args.max_len, emb, windows=args.windows, filter_size=args.filter_size,
-                        dropout_rate=args.dropout_rate, lr=args.lr)
+    model = build_model(args.max_len, emb, windows=args.windows, filter_size=args.filter_size, lr=args.lr,
+                        dropout_rate=args.dropout_rate, batch_norm=args.batch_norm, activation=args.activation)
     model.summary()
 
     callbacks = [
@@ -154,7 +171,7 @@ if __name__ == '__main__':
     # Train model
     try:
         logger.info("training the model")
-        model.fit(x_train, y_train, epochs=args.epochs, validation_data=val,
+        model.fit(train[0], train[1], epochs=args.epochs, validation_data=val,
                   batch_size=args.batch_size, callbacks=callbacks)
     except KeyboardInterrupt:
         logger.error("keyboard interrupt")
@@ -169,7 +186,7 @@ if __name__ == '__main__':
         os.remove(args.model_tmp_path)
 
     y_val_preds = model.predict(val[0])
-    print(classification_report(np.argmax(val[1], axis=1), 
+    print(classification_report(np.argmax(val[1], axis=1),
           np.argmax(y_val_preds, axis=1), target_names=label_encoder.classes_))
 
     # Save metrics

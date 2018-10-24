@@ -19,6 +19,11 @@ POS_WORD_VECTORS=(
     "/projects/nlpl/data/vectors/11/1.zip"
 )
 
+LEMMATIZED_WORD_VECTORS=(
+    "/projects/nlpl/data/vectors/11/17.zip",
+    "/projects/nlpl/data/vectors/11/19.zip"
+)
+
 mkdir -p $OUTPUT_DIR
 
 for ((i=0; i < ${#POS_WORD_VECTORS[@]}; i++)); do

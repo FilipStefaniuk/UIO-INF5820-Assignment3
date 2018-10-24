@@ -2,7 +2,17 @@
 Sentiment Analysis with Convolutional Neural Networks
 
 TODO:
-- Scripts with experiments
-- Present data in notebook
+
+- train emb on non lemmatized
+- pos tags and just lemmas
+- results of window sizes 
+
 - Report
+    + 1
+    + 2
+    + 3
+    + 4
+
+- Best Model
 - Eval on test script
+- README

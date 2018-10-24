@@ -1,9 +1,13 @@
-from keras.layers import Conv2D, Conv1D, MaxPool1D, Concatenate, Dropout, Dense, Input, GlobalMaxPool1D, Reshape
+from keras.layers import Conv2D, Conv1D, MaxPool1D, Concatenate, Dropout, Dense
+from keras.layers import Input, GlobalMaxPool1D, Reshape, ReLU, BatchNormalization
+from keras.layers import ELU, LeakyReLU, Activation
 from keras.models import Model
 from keras.optimizers import Adadelta
 
 
-def build_model(input_size, embedding, windows=[3, 4, 5], filter_size=100, dropout_rate=0.5, lr=1.0):
+def build_model(input_size, embedding, windows=[3, 4, 5], filter_size=100,
+                dropout_rate=0.5, lr=1.0, activation='relu', batch_norm=False):
+    """Builds CNN model"""
 
     inputs = Input(shape=(input_size,))
 
@@ -11,9 +15,22 @@ def build_model(input_size, embedding, windows=[3, 4, 5], filter_size=100, dropo
 
     regions = []
     for window in windows:
-        conv = Conv2D(filter_size, (window, 300), activation='relu')(emb)
-        reshape = Reshape((-1, filter_size))(conv)
-        pool = GlobalMaxPool1D()(reshape)
+        conv = Conv2D(filter_size, (window, 300))(emb)
+        conv = Reshape((-1, filter_size))(conv)
+
+        if batch_norm:
+            conv = BatchNormalization()(conv)
+
+        if activation in ('relu', 'tanh', 'sigmoid'):
+            conv = Activation(activation)(conv)
+        elif activation in ('leakyrelu'):
+            conv = LeakyReLU()(conv)
+        elif activation in ('elu'):
+            conv = ELU()(conv)
+        else:
+            raise ValueError('unknown activation')
+
+        pool = GlobalMaxPool1D()(conv)
 
         regions.append(pool)
 
