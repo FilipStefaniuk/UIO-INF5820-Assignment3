@@ -19,6 +19,8 @@ WORD_VECTORS=(
     "/usit/abel/u1/filipste/vectors/GoogleNews-vectors-negative300.bin"
     "/usit/abel/u1/filipste/vectors/glove.840B.300d.bin"
     "/usit/abel/u1/filipste/vectors/wiki.en.bin"
+    "/projects/nlpl/data/vectors/11/17.zip"
+    "/projects/nlpl/data/vectors/11/19.zip"
 )
 
 
