@@ -10,7 +10,7 @@ import tensorflow as tf
 
 from data import load_data
 from emb import load_emb_model, get_emb_layer
-from model import build_model
+from model import build_baseline_model, build_deep_model
 
 from keras.utils import to_categorical
 from keras.utils.vis_utils import plot_model
@@ -43,7 +43,6 @@ def get_args():
     parser.add_argument('--dropout_rate', type=float, default=0.5, help="dropout rate.")
     parser.add_argument('--windows', nargs='+', type=int, default=[3, 4, 5], help="window sizes.")
     parser.add_argument('--patience', type=int, default=5, help="patience for early stopping.")
-    parser.add_argument('--batch_norm', action="store_true", default=False, help="wether to use batch norm.")
 
     parser.add_argument('--emb_dim', type=int, default=300,
                         help="dimentionality of word embeddings (overrided when loaded from file)")
@@ -75,28 +74,17 @@ def get_embedding(mode, path, tokenizer, input_len, emb_dim=300):
     emb_dim = emb_model.wv.vector_size if emb_model else emb_dim
 
     if mode in ('static'):
-        emb = Sequential()
-        emb.add(get_emb_layer(emb_model, tokenizer, trainable=False))
-        emb.add(Reshape((input_len, emb_dim, 1)))
-        emb.name = 'embedding_1'
-        return emb
+        return get_emb_layer(emb_model, tokenizer, trainable=False)
 
     elif mode in ('non-static'):
-        emb = Sequential()
-        emb.add(get_emb_layer(emb_model, tokenizer, trainable=True))
-        emb.add(Reshape((input_len, emb_dim, 1)))
-        emb.name = 'embedding_1'
-        return emb
+        return get_emb_layer(emb_model, tokenizer, trainable=True)
 
     elif mode in ('multichannel'):
 
         inputs = Input(shape=(input_len,))
 
         emb1 = get_emb_layer(emb_model, tokenizer, trainable=False)(inputs)
-        emb1 = Reshape((input_len, emb_dim, 1))(emb1)
-
         emb2 = get_emb_layer(emb_model, tokenizer, trainable=True)(inputs)
-        emb2 = Reshape((input_len, emb_dim, 1))(emb2)
 
         outputs = Concatenate()([emb1, emb2])
 
@@ -150,6 +138,7 @@ if __name__ == '__main__':
     val, _ = load_data('./data/stanford_sentiment_binary_dev.tsv.gz', tokenizer=tokenizer,
                        label_encoder=label_encoder, maxlen=args.max_len, max_words=args.max_words, words=args.words)
 
+    logger.info("training: {} samples, validation: {} samples".format(len(train[0]), len(val[0])))
     logger.info("using {} {} words".format(tokenizer.num_words or len(tokenizer.word_index), args.words))
 
     # Create embedding layer
@@ -158,8 +147,9 @@ if __name__ == '__main__':
 
     # Build model
     logger.info("building model")
-    model = build_model(args.max_len, emb, windows=args.windows, filter_size=args.filter_size, lr=args.lr,
-                        dropout_rate=args.dropout_rate, batch_norm=args.batch_norm, activation=args.activation)
+    # model = build_model(args.max_len, emb, windows=args.windows, filter_size=args.filter_size, lr=args.lr,
+    #                     dropout_rate=args.dropout_rate, activation=args.activation)
+    model = build_deep_model(args.max_len, emb)
     model.summary()
 
     callbacks = [
