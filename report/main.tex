@@ -27,6 +27,11 @@
 \usepackage{pgf}
 \usepackage{booktabs}
 \usepackage{graphicx}
+\usepackage{listings}
+\usepackage{hyperref}
+\usepackage{wrapfig}
+\usepackage{subcaption}
+
 %----------------------------------------------------------------------------------------
 %	ASSIGNMENT INFORMATION
 %----------------------------------------------------------------------------------------
@@ -40,6 +45,156 @@
 \begin{document}
 
 \maketitle
+\section*{Introduction}
+In this assignment, I have implemented Convolutional Neural Network classifier
+based on Kim\footnote{\href{https://arxiv.org/abs/1408.5882}{Yoon Kim 2014}} 2014 and 
+Ye Zang\footnote{\href{https://arxiv.org/abs/1510.03820}{Ye Zang et al. 2015}} 2015
+work. I haven't achieved the accuracies listed in papers, but I suspect this is due to the
+fact that the dataset we have in this assignment is different. The authors of the mentioned
+papers used also the \textbf{phrases} part of the SST-2 dataset for training.\\
+I have implemented two scripts:
+\begin{itemize}
+    \item \lstinline{train_model.py} - used for training
+    \item \lstinline{eval_on_test.py} - used for evaluation
+\end{itemize}
+Aditionally I have several functions splitted across the python modules:
+\begin{itemize}
+    \item \lstinline{data.py} - data preprocessing
+    \item \lstinline{emb.py} - loading embeddings and creation of embeddings layers
+    \item \lstinline{model.py} - functions for creating the models
+\end{itemize}
+All the experiments were run on abel with the scripts provided in the \lstinline{scripts}
+directory. Source code, scripts, logs from experiments, results as json files,
+notebooks used to present the data and sourcecode of this report 
+available in github repository\footnote{\href{https://github.uio.no/filipste/INF5820-Assignment3}{https://github.uio.no/filipste/INF5820-Assignment3}}
+
+\section{Baseline sentiment analisys}
+I have build CNN model with hyperparameters listed in the assignment, namely:
+\begin{enumerate}
+    \item categorical cross-entropy loss
+    \item pre-trained 300-D \textit{word2vec} embeddings trained on Google News corpus,
+    I used original version downloaded from the web.
+    \item sequence of static word embeddings
+    \item window sizes of 3, 4 and 5
+    \item 100-D filters
+    \item ReLU activation function
+    \item global 1-max pooling
+    \item dropout with dropout rate of 0.5
+\end{enumerate}
+I have not restricted the vocabulary size resulting in having 13295 words in vocabulary.
+I have padded and truncated sentences to length of 50. As a result I received architecture listed below.
+\newpage
+\begin{figure}[h]
+    \centering
+    \includegraphics[width=1\textwidth]{../figures/baseline.png}
+    \caption{Baseline model architecture}
+\end{figure}
+I have trained the model using batch size of \textbf{256} and \textbf{adadelta} optimizer 
+(same as in the papers).
+\section{Controlling the randomness}
+I have trained the model 10 times both with unset seed and seed set to \textbf{123}. I got
+the following results:
+\begin{figure}[h]
+    \centering
+    \input{./baseline.tex}
+\end{figure}
+
+\section{Sensitivity analysis: tuning hyperparameters}
+When testing hyperparameters I was changing value of only one of them keeping
+the rest as in a baseline model. The authors of the \textit{A Sensitivity Analysis of (and Practitioners’ Guide to) Convolutional
+Neural Networks for Sentence Classification} concluded that almost always 1-max pooling strategy
+outperformed all the other approches and dropout is the best regularization term. Because of that I decided
+that those two hyperparameters are not interesting to test and experimented with all the others.
+I set the same seed for all the experiments.
 
 
+\subsection{Activation function}
+\begin{wrapfigure}[9]{r}{0.5\textwidth}
+    \begin{center}
+        \input{./activation.tex}
+    \end{center}
+    \caption{Accuracy with different activations}
+\end{wrapfigure}
+I have tested multiple activation functions in convolutional layers. The \textit{sigmoid} and 
+\textit{tanh} activations performed poorly. I tried different variations of \textit{ReLU} activation
+namely \textit{eLU} and \textit{leakyReLU} but there was no improvement. Seems like the \textit{ReLU}
+is the best activation function to use in this case, what is similar to the conclusions of authors of 
+\textit{A Sensitivity Analysys...} paper.
+
+
+\newpage
+\subsection{Convolutional window size}
+I have tested the same window sizes as in the previously mentioned paper,
+it seems that in this case there is not much of a difference when using different
+window sizes. Turns out that the best setting was either using the 3-4-5, 1-3-5-7 or simply 3 window size.
+Seems like window size of 3 is enough to capture necessairy information.
+
+\subsection{Number of filters per window size}
+Experimenting with the filter size, yielded results that the optimal size of the filter is 200.
+\begin{figure}[h]
+    \begin{subfigure}{0.5\textwidth}
+        \centering
+        \input{./windows.tex}
+        \caption{Accuracy with different window sizes}
+    \end{subfigure}
+    \begin{subfigure}{0.5\textwidth}
+        \centering
+        \input{./filters.tex}
+        \caption{Accuracy with different filter sizes}
+    \end{subfigure}
+\end{figure}
+
+\subsection{Raw, lemmatized and POS tagged data}
+I have tried using POS tagged data, but it seems that the word embedding model with
+POS tags is not good. Using Google News model (\textit{1.zip}) there was \textbf{9001} out of vocabulary tokens,
+so the model had very poor results.\\
+To compare results when using lemmatized and non-lemmatized data I used models trained on Wikipedia and Gigaword
+(\textit{17.zip, 18.zip, 19.zip 20.zip}). There was no clear improvement when using lemmatized data. 
+
+
+\begin{figure}[h]
+    \begin{subfigure}{0.5\textwidth}
+        \centering
+        \input{./pos_tagged.tex}
+        \caption{Metrics when using model 1.zip}
+    \end{subfigure}
+    \begin{subfigure}{0.5\textwidth}
+        \centering
+        \input{./lemmatized.tex}
+        \caption{Comparison of using raw and lemmatized data}
+    \end{subfigure}
+\end{figure}
+
+\subsection{Multiple channels}
+I have tested model with multiple channels, one with static and the second with
+no-static word embeddings as in Kim 2014. Results are presented in section about
+influence of word embeddings.
+
+\newpage
+\section{Testing the influence of word embeddings}
+I have tested multiple word embeddings in 3 modes: \textbf{static}, \textbf{non-static} and \textbf{multichannel}.
+Fine tuning helps achieve better results, but the best scores were achieved when using \textbf{multichannel} mode.
+Fasttext turned out to be the best model.
+\begin{figure}[h]
+    \centering
+    \input{./embeddings.tex}
+    \caption{Comparison of different word embeddings.}
+\end{figure}
+\subsection{Inferring vectors for OOV words}
+Inferring OOV words further improved the results. Model trained with these embeddings achieved
+accuracy \textbf{0.818} in \textbf{static} mode.
+\begin{figure}[h]
+    \centering
+    \input{./infer.tex}
+    \caption{Results after infering OOV words}
+\end{figure}
+
+\subsection{Influence of vocabulary size}
+I have tested how changing the vocabulary size changes the number of the oov tokens.
+Experiments were performed on Google News \textit{w2v}.
+\begin{figure}[h]
+    \centering
+    \includegraphics[scale=0.5]{../figures/vocab_size.png}
+    \caption{Results after infering OOV words}
+\end{figure}
 \end{document}
