@@ -20,7 +20,7 @@ POS_WORD_VECTORS=(
 )
 
 LEMMATIZED_WORD_VECTORS=(
-    "/projects/nlpl/data/vectors/11/17.zip",
+    "/projects/nlpl/data/vectors/11/17.zip"
     "/projects/nlpl/data/vectors/11/19.zip"
 )
 
