@@ -6,7 +6,7 @@
 #SBATCH --partition=accel
 #SBATCH --gres=gpu:1
 #SBATCH --mem-per-cpu=10000
-#SBATCH --output=./logs/filters.log
+#SBATCH --output=./logs/activations.log
 
 module purge
 module use -a /projects/nlpl/software/modulefiles/
@@ -16,7 +16,7 @@ module add nlpl-tensorflow
 SEED=123
 WORD_VECTORS="/usit/abel/u1/filipste/vectors/GoogleNews-vectors-negative300.bin"
 OUTPUT_DIR="./results/baseline/activation/"
-ACTIVATIONS=("relu", "tanh", "sigmoid", "leakyrelu", "elu")
+ACTIVATIONS=("relu" "tanh" "sigmoid" "leakyrelu" "elu")
 
 mkdir -p $OUTPUT_DIR
 

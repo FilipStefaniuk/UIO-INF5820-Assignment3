@@ -34,5 +34,5 @@ mkdir -p $OUTPUT_DIR
 
 for ((i=0; i < ${#WINDOW_SIZES[@]}; i++)); do
     OUTPUT_FILE="${OUTPUT_DIR}$(echo ${WINDOW_SIZES[$i]} | sed 's/ /-/g').json"
-    python train_model.py --mode=static --results_path="$OUTPUT_FILE" --seed="$SEED" --model_tmp_path="windows.model.tmp" --windows ${WINDOW_SIZES[$i]}
+    python train_model.py --mode=static --results_path="$OUTPUT_FILE" --seed="$SEED" --word_vectors="$WORD_VECTORS" --model_tmp_path="windows.model.tmp" --windows ${WINDOW_SIZES[$i]}
 done

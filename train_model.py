@@ -10,7 +10,7 @@ import tensorflow as tf
 
 from data import load_data
 from emb import load_emb_model, get_emb_layer
-from model import build_baseline_model, build_deep_model
+from model import build_baseline_model
 
 from keras.utils import to_categorical
 from keras.utils.vis_utils import plot_model
@@ -147,9 +147,9 @@ if __name__ == '__main__':
 
     # Build model
     logger.info("building model")
-    # model = build_model(args.max_len, emb, windows=args.windows, filter_size=args.filter_size, lr=args.lr,
-    #                     dropout_rate=args.dropout_rate, activation=args.activation)
-    model = build_deep_model(args.max_len, emb)
+    model = build_baseline_model(args.max_len, emb, windows=args.windows, filter_size=args.filter_size, lr=args.lr,
+                                 dropout_rate=args.dropout_rate, activation=args.activation)
+
     model.summary()
 
     callbacks = [

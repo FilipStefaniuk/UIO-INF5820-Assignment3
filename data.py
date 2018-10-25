@@ -14,7 +14,7 @@ def load_data(path, tokenizer=None, label_encoder=None, words='raw', maxlen=None
     data = pd.read_csv(path, sep='\t', compression='gzip', usecols=[col_x, col_y])
 
     if words in ('lemmatized'):
-        data[col_x] = df[col_x].map(lambda x: " ".join(word.split('_')[0] for word in x.split()))
+        data[col_x] = data[col_x].map(lambda x: " ".join(word.split('_')[0] for word in x.split()))
 
     if tokenizer is None:
         tokenizer = Tokenizer(num_words=max_words, filters='', lower=False)\
