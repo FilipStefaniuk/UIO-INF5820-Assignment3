@@ -98,7 +98,7 @@ the following results:
     \centering
     \input{./baseline.tex}
 \end{figure}
-Setting the seed doesn't change much, maybe because I am using GPU.
+Setting the seed reduces the variance but doesn't change that much, maybe because I am using GPU.
 \section{Sensitivity analysis: tuning hyperparameters}
 When testing hyperparameters I was changing value of only one of them keeping
 the rest as in a baseline model. The authors of the \textit{A Sensitivity Analysis of (and Practitioners’ Guide to) Convolutional
@@ -199,5 +199,11 @@ Experiments were performed on Google News \textit{w2v}.
 \end{figure}
 
 \newpage
-\section{Evaluation of the best model}
+
+\section*{Conclusion}
+As my best model, I have trained the same model as in baseline but with
+\textit{wikipedia-news fasttext} word embeddings in \textbf{static} mode.
+It seems that changing hyperparameters doesn't change much, and results are
+different when setting different random seed. The only one clear improvement is when using better
+word embeddings.
 \end{document}
