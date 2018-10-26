@@ -198,5 +198,5 @@ if __name__ == '__main__':
     if args.save_path:
         logger.info("saving model")
         model.save(args.save_path)
-        with open('tokenizer.pkl', 'wb') as f:
+        with open('./tokenizer.pkl', 'wb') as f:
             pickle.dump(tokenizer, f)
