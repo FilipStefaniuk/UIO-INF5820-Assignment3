@@ -2,6 +2,7 @@ import os
 import sys
 import json
 import random
+import pickle
 import logging
 import argparse
 import numpy as np
@@ -196,4 +197,6 @@ if __name__ == '__main__':
     # Save model
     if args.save_path:
         logger.info("saving model")
-        model.save_weights(args.save_path)
+        model.save(args.save_path)
+        with open('tokenizer.pkl', 'wb') as f:
+            pickle.dump(tokenizer, f)
